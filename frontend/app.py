@@ -11,103 +11,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Minimal CSS for button styling
 st.markdown("""
-<script>
-    const root = document.documentElement;
-    root.style.setProperty('--primary-color', '#3B82F6');
-</script>
-""", unsafe_allow_html=True)
-
-# --- Flat style + theme-aware (dark/light) ---
-st.markdown(
-    """
 <style>
-  /* Uses Streamlit theme variables (dark/light) */
-  :root {
-    --bg: var(--background-color);
-    --bg2: var(--secondary-background-color);
-    --text: var(--text-color);
-    --primary: var(--primary-color);
-    --radius: 14px;
-  }
-  
-  [data-testid="stHeader"] { background: transparent; }
-
-  .block-container { padding-top: 1.75rem; padding-bottom: 2rem; max-width: 1400px; }
-
-  .stTabs [data-baseweb="tab-list"] { gap: 1.25rem; padding-left: 0.25rem; }
-  .stTabs [data-baseweb="tab"] {
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0.4rem 0.25rem !important;
-  }
-  .stTabs [aria-selected="true"] {
-    border-bottom: 2px solid #3B82F6 !important;
-    color: #3B82F6 !important;
-  }
-
-  div[data-testid="stMetric"] {
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-  div[data-testid="stMetricValue"] { font-weight: 750; }
-  div[data-testid="stMetricLabel"] {
-    opacity: 0.75;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-  }
-
-  .stPlotlyChart { background: transparent !important; border: 0 !important; padding: 0 !important; }
-
-  .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-    border-radius: var(--radius) !important;
-    padding: 0.9rem 1rem !important;
-    font-weight: 700 !important;
-    background-color: #3B82F6 !important;
-    color: white !important;
-  }
-  .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
-    background-color: #2563EB !important;
-  }
-
-  /* Sliders - blue */
-  .stSlider [data-baseweb="slider"] [role="slider"] {
-    background-color: #3B82F6 !important;
-  }
-  .stSlider [data-baseweb="slider"] [data-testid="stTickBar"] > div {
-    background-color: #3B82F6 !important;
-  }
-
-  /* Progress bar - blue */
-  .stProgress > div > div > div {
-    background-color: #3B82F6 !important;
-  }
-
-  /* Links - blue */
-  a, a:link, a:visited {
-    color: #3B82F6 !important;
-  }
-  a:hover {
-    color: #2563EB !important;
-  }
-
-  .pill {
-    display: inline-flex;
-    gap: .5rem;
-    align-items: center;
-    padding: .35rem .65rem;
-    border-radius: 999px;
-    background: var(--bg2);
-    font-weight: 650;
-  }
+    /* Style submit button to be blue */
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: #3B82F6 !important;
+        color: white !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #2563EB !important;
+    }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -129,20 +45,22 @@ def make_prediction(payload: dict):
 
 
 def _theme_is_dark() -> bool:
-    base = st.get_option("theme.base")  # "light" | "dark" | "auto" | None
-    if base == "dark":
-        return True
-    if base == "light":
-        return False
-    # fallback: si auto/None -> on reste neutre (Plotly transparent)
+    """Detect if the current theme is dark mode."""
+    try:
+        # Try to get theme from session state or config
+        theme = st.get_option("theme.base")
+        if theme == "dark":
+            return True
+        elif theme == "light":
+            return False
+    except:
+        pass
+    # Default to light theme
     return False
 
 
-def _primary_color() -> str:
-    return st.get_option("theme.primaryColor") or "#3b82f6"
-
-
 def create_bar_chart(metrics: dict):
+    """Create horizontal bar chart for model metrics."""
     labels = ["Accuracy", "Precision", "Recall", "F1 Score", "ROC AUC"]
     values = [
         float(metrics["accuracy"]),
@@ -152,19 +70,20 @@ def create_bar_chart(metrics: dict):
         float(metrics["roc_auc"]),
     ]
 
-    primary = _primary_color()
     dark = _theme_is_dark()
-    font_color = "rgba(255,255,255,.85)" if dark else "rgba(0,0,0,.75)"
-    grid = "rgba(148,163,184,.25)" if dark else "rgba(15,23,42,.12)"
+    font_color = "white" if dark else "black"
+    grid_color = "rgba(255,255,255,0.1)" if dark else "rgba(0,0,0,0.1)"
+    bar_color = "#3B82F6"  # Blue color
 
     fig = go.Figure(
         go.Bar(
             y=labels,
             x=values,
             orientation="h",
-            marker=dict(color=primary, cornerradius=8),
+            marker=dict(color=bar_color),
             text=[f"{v:.1%}" for v in values],
             textposition="outside",
+            textfont=dict(color=font_color),
         )
     )
 
@@ -173,18 +92,28 @@ def create_bar_chart(metrics: dict):
         margin=dict(l=10, r=70, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="system-ui", color=font_color),
-        xaxis=dict(range=[0, 1.05], tickformat=".0%", gridcolor=grid, zeroline=False),
-        yaxis=dict(showgrid=False),
+        font=dict(color=font_color),
+        xaxis=dict(
+            range=[0, 1.05],
+            tickformat=".0%",
+            gridcolor=grid_color,
+            zeroline=False,
+            tickfont=dict(color=font_color)
+        ),
+        yaxis=dict(
+            showgrid=False,
+            tickfont=dict(color=font_color)
+        ),
     )
     return fig
 
 
 def create_gauge(probability: float):
-    primary = _primary_color()
+    """Create gauge chart for probability visualization."""
     dark = _theme_is_dark()
-    font_color = "rgba(255,255,255,.9)" if dark else "rgba(0,0,0,.8)"
-    tick = "rgba(148,163,184,.6)" if dark else "rgba(15,23,42,.35)"
+    font_color = "white" if dark else "black"
+    tick_color = "rgba(255,255,255,0.6)" if dark else "rgba(0,0,0,0.6)"
+    bar_color = "#3B82F6"  # Blue color
 
     fig = go.Figure(
         go.Indicator(
@@ -192,14 +121,19 @@ def create_gauge(probability: float):
             value=probability * 100,
             number={"suffix": "%", "font": {"size": 52, "color": font_color}},
             gauge={
-                "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": tick},
-                "bar": {"color": primary, "thickness": 0.75},
+                "axis": {
+                    "range": [0, 100],
+                    "tickwidth": 1,
+                    "tickcolor": tick_color,
+                    "tickfont": {"color": font_color}
+                },
+                "bar": {"color": bar_color, "thickness": 0.75},
                 "bgcolor": "rgba(0,0,0,0)",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0, 30], "color": "rgba(16,185,129,.18)"},
-                    {"range": [30, 60], "color": "rgba(245,158,11,.18)"},
-                    {"range": [60, 100], "color": "rgba(239,68,68,.18)"},
+                    {"range": [0, 30], "color": "rgba(16,185,129,0.2)"},
+                    {"range": [30, 60], "color": "rgba(245,158,11,0.2)"},
+                    {"range": [60, 100], "color": "rgba(239,68,68,0.2)"},
                 ],
             },
         )
@@ -209,7 +143,7 @@ def create_gauge(probability: float):
         height=320,
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="system-ui"),
+        font=dict(color=font_color),
     )
     return fig
 
@@ -248,15 +182,10 @@ with tab_metrics:
 
         with right:
             st.markdown("#### Model Information")
-            st.markdown(
-                f"""
-<span class="pill">:material/label: Name</span> **{metrics.get("model_name","-")}**
-<span class="pill">:material/tag: Version</span> **{metrics.get("model_version","-")}**
-<span class="pill">:material/tune: Algorithm</span> **Gradient Boosting**
-<span class="pill">:material/fingerprint: Run</span> `{str(metrics.get("run_id",""))[:16]}…`
-""",
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"**Name:** {metrics.get('model_name','-')}")
+            st.markdown(f"**Version:** {metrics.get('model_version','-')}")
+            st.markdown(f"**Algorithm:** Gradient Boosting")
+            st.markdown(f"**Run ID:** `{str(metrics.get('run_id',''))[:16]}...`")
 
 # --- Tab 2: prediction ---
 with tab_pred:
