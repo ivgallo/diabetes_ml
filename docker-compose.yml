@@ -1,0 +1,52 @@
+services:
+  mlflow:
+    build: ./mlflow
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:5000\")' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - mlflow_data:/mlflow
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+
+  training:
+    build:
+      context: .
+      dockerfile: ./training/Dockerfile
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - DATA_PATH=/app/data/raw/diabetes.csv
+    volumes:
+      - mlflow_data:/mlflow
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    profiles:
+      - train
+
+volumes:
+  mlflow_data:

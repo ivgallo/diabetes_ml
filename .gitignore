@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+venv/
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Docker
+.docker/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Documentation
+CLAUDE.MD
