@@ -17,6 +17,3 @@ mlflow.db
 
 # OS
 .DS_Store
-
-# Documentation
-CLAUDE.MD
